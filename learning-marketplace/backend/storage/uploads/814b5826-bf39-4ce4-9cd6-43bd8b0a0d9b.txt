@@ -1,0 +1,1 @@
+Quantum computing is a type of computing that uses quantum-mechanical phenomena.

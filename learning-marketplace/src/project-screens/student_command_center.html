@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Murph AI | Student Command Center</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@100;300;400;500;600;700;900&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-deep: #050505;
+            --electric-blue: #00E0FF;
+            --deep-purple: #7000FF;
+            --glass: rgba(255, 255, 255, 0.03);
+            --glass-border: rgba(255, 255, 255, 0.08);
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background-color: var(--bg-deep);
+            color: white;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--glass-border); border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); }
+
+        .noise-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            opacity: 0.03;
+            pointer-events: none;
+            z-index: 100;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3BaseFilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/feFilter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+        }
+
+        .ethereal-glow {
+            position: fixed;
+            width: 800px;
+            height: 800px;
+            background: radial-gradient(circle, rgba(0, 224, 255, 0.08) 0%, rgba(112, 0, 255, 0.03) 50%, transparent 70%);
+            filter: blur(100px);
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        .glass-panel {
+            background: var(--glass);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--glass-border);
+        }
+
+        .sidebar-item {
+            position: relative;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .sidebar-item.active {
+            color: var(--electric-blue);
+            background: rgba(0, 224, 255, 0.05);
+        }
+
+        .sidebar-item.active::before {
+            content: '';
+            position: absolute;
+            left: 0;
+            top: 20%;
+            height: 60%;
+            width: 3px;
+            background: var(--electric-blue);
+            box-shadow: 0 0 15px var(--electric-blue);
+            border-radius: 0 4px 4px 0;
+        }
+
+        .bento-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%);
+            border: 1px solid var(--glass-border);
+            border-radius: 24px;
+            transition: all 0.4s ease;
+        }
+
+        .bento-card:hover {
+            border-color: rgba(0, 224, 255, 0.3);
+            transform: translateY(-4px);
+            background: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+        }
+
+        .murph-avatar-small {
+            animation: breathe 4s ease-in-out infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); filter: drop-shadow(0 0 5px rgba(0, 224, 255, 0.2)); }
+            50% { transform: scale(1.05); filter: drop-shadow(0 0 15px rgba(0, 224, 255, 0.5)); }
+        }
+
+        .session-card-image {
+            mask-image: linear-gradient(to bottom, black 60%, transparent 100%);
+        }
+
+        .price-badge {
+            background: rgba(0, 224, 255, 0.1);
+            border: 1px solid rgba(0, 224, 255, 0.2);
+            color: var(--electric-blue);
+        }
+
+        [x-cloak] { display: none !important; }
+    </style>
+</head>
+<body x-data="{ 
+    activeTab: 'dashboard', 
+    walletBalance: 1450,
+    searchQuery: '',
+    murphThinking: false,
+    notifications: 2,
+    sessions: [
+        { id: 1, teacher: 'Dr. Aris Thorne', topic: 'Quantum Computing Basics', price: 45, rating: 4.9, img: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop' },
+        { id: 2, teacher: 'Sarah Jenkins', topic: 'Conversational Japanese', price: 18, rating: 4.8, img: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?w=400&h=400&fit=crop' },
+        { id: 3, teacher: 'Marcus Chen', topic: 'Cinematic Lighting in Blender', price: 32, rating: 5.0, img: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=400&h=400&fit=crop' }
+    ]
+}">
+
+    <div class="noise-overlay"></div>
+    <div class="ethereal-glow -top-40 -left-40"></div>
+    <div class="ethereal-glow -bottom-40 -right-40" style="background: radial-gradient(circle, var(--deep-purple) 0%, transparent 70%); opacity: 0.4;"></div>
+
+    <div class="flex h-screen overflow-hidden relative z-10">
+        
+        <!-- SIDEBAR NAVIGATION -->
+        <aside class="w-20 lg:w-72 border-r border-white/5 bg-black/20 backdrop-blur-md flex flex-col transition-all duration-300">
+            <div class="p-6 flex items-center gap-4 mb-8">
+                <div class="w-10 h-10 bg-gradient-to-br from-cyan-400 to-purple-600 rounded-xl flex items-center justify-center shadow-[0_0_20px_rgba(0,224,255,0.3)]">
+                    <span class="font-black text-xl">M</span>
+                </div>
+                <span class="hidden lg:block font-bold text-xl tracking-tight">Murph AI</span>
+            </div>
+
+            <nav class="flex-1 px-3 space-y-2">
+                <template x-for="item in [
+                    {id: 'dashboard', label: 'Dashboard', icon: 'M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6'},
+                    {id: 'discover', label: 'Discover Sessions', icon: 'M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z'},
+                    {id: 'live', label: 'Live Session', icon: 'M15 10l4.553-2.276A1 1 0 0121 8.618v6.764a1 1 0 01-1.447.894L15 14M5 18h8a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v8a2 2 0 002 2z'},
+                    {id: 'wallet', label: 'Wallet', icon: 'M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z'},
+                    {id: 'history', label: 'Learning History', icon: 'M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z'},
+                    {id: 'reviews', label: 'Reviews', icon: 'M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z'}
+                ]">
+                    <button 
+                        @click="activeTab = item.id"
+                        class="sidebar-item w-full flex items-center gap-4 px-4 py-3 rounded-xl hover:bg-white/5 transition-all group"
+                        :class="activeTab === item.id ? 'active' : 'text-white/50'"
+                    >
+                        <svg class="w-6 h-6 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" :d="item.icon"></path>
+                        </svg>
+                        <span class="hidden lg:block font-medium tracking-wide" x-text="item.label"></span>
+                    </button>
+                </template>
+            </nav>
+
+            <div class="p-4 mt-auto border-t border-white/5">
+                <button class="w-full flex items-center gap-4 px-4 py-3 rounded-xl text-white/50 hover:bg-red-500/10 hover:text-red-400 transition-all">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path></svg>
+                    <span class="hidden lg:block font-medium">Logout</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="flex-1 flex flex-col min-w-0 bg-black/40">
+            
+            <!-- HEADER -->
+            <header class="h-20 flex items-center justify-between px-8 border-b border-white/5">
+                <div>
+                    <h2 class="text-xl font-semibold tracking-tight">Student Command Center</h2>
+                    <p class="text-xs text-white/40 uppercase tracking-widest font-medium">System Status: Optimal</p>
+                </div>
+
+                <div class="flex items-center gap-6">
+                    <!-- Notifications -->
+                    <button class="relative p-2 text-white/50 hover:text-white transition-colors">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9"></path></svg>
+                        <span x-show="notifications > 0" class="absolute top-1 right-1 w-2 h-2 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00E0FF]"></span>
+                    </button>
+
+                    <!-- Profile -->
+                    <div class="flex items-center gap-3 pl-6 border-l border-white/10">
+                        <div class="text-right hidden sm:block">
+                            <p class="text-sm font-bold">Alex Rivera</p>
+                            <p class="text-xs text-cyan-400 font-medium tracking-wide">Elite Learner</p>
+                        </div>
+                        <div class="w-10 h-10 rounded-full bg-gradient-to-tr from-cyan-500 to-purple-500 p-[2px]">
+                            <div class="w-full h-full rounded-full bg-black overflow-hidden border border-black">
+                                <img src="https://api.dicebear.com/7.x/avataaars/svg?seed=Alex" alt="Avatar">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <!-- SCROLLABLE DASHBOARD CONTENT -->
+            <div class="flex-1 overflow-y-auto p-8">
+                
+                <!-- WELCOME BANNER -->
+                <section class="mb-10 relative overflow-hidden rounded-[2rem] p-10 glass-panel border-cyan-500/20">
+                    <div class="absolute top-0 right-0 w-1/2 h-full bg-gradient-to-l from-cyan-500/10 to-transparent pointer-events-none"></div>
+                    <div class="relative z-10 max-w-2xl">
+                        <h1 class="text-4xl lg:text-5xl font-black mb-4 tracking-tighter leading-tight">
+                            Welcome back, <span class="text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 to-purple-400">Alex</span>.
+                        </h1>
+                        <p class="text-lg text-white/50 font-light mb-8">
+                            "The expert in anything was once a beginner." Murph has curated 3 new sessions for your Quantum Physics path.
+                        </p>
+                        <div class="flex flex-wrap gap-4">
+                            <button @click="activeTab = 'discover'" class="px-8 py-3 bg-white text-black font-bold rounded-xl hover:scale-105 transition-all shadow-xl shadow-white/5">
+                                Start Learning
+                            </button>
+                            <button class="px-8 py-3 bg-white/5 border border-white/10 font-bold rounded-xl hover:bg-white/10 transition-all">
+                                View Roadmap
+                            </button>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- BENTO GRID STATS -->
+                <div class="grid grid-cols-1 md:grid-cols-12 gap-6 mb-10">
+                    
+                    <!-- Wallet Widget -->
+                    <div class="md:col-span-4 bento-card p-6 flex flex-col justify-between group">
+                        <div class="flex justify-between items-start">
+                            <div class="p-3 bg-cyan-500/10 rounded-2xl text-cyan-400">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path></svg>
+                            </div>
+                            <span class="text-xs font-bold tracking-widest text-white/30 uppercase group-hover:text-cyan-400/50 transition-colors">Balance</span>
+                        </div>
+                        <div class="mt-8">
+                            <h3 class="text-4xl font-black tracking-tighter">₹<span x-text="walletBalance"></span></h3>
+                            <div class="flex items-center gap-2 mt-2 text-green-400 text-sm font-medium">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 10l7-7 7 7"></path></svg>
+                                <span>+₹200 this week</span>
+                            </div>
+                        </div>
+                        <button class="mt-6 w-full py-3 rounded-xl bg-white/5 border border-white/5 hover:border-cyan-500/50 transition-all text-sm font-bold">
+                            Add Credits
+                        </button>
+                    </div>
+
+                    <!-- Recommended Quick-Peek -->
+                    <div class="md:col-span-8 bento-card p-8 flex flex-col">
+                        <div class="flex justify-between items-center mb-6">
+                            <h3 class="text-xl font-bold tracking-tight">Active Learning Status</h3>
+                            <span class="px-3 py-1 bg-green-500/10 text-green-400 text-[10px] font-bold uppercase tracking-widest border border-green-500/20 rounded-full">All Systems Go</span>
+                        </div>
+                        <div class="flex flex-1 items-center gap-8">
+                            <div class="flex-1 space-y-4">
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-white/50">Current Streak</span>
+                                        <span class="font-bold text-orange-400">12 Days</span>
+                                    </div>
+                                    <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-orange-400 to-red-500 w-[60%]"></div>
+                                    </div>
+                                </div>
+                                <div class="space-y-2">
+                                    <div class="flex justify-between text-sm">
+                                        <span class="text-white/50">Total Learning Time</span>
+                                        <span class="font-bold text-cyan-400">42h 15m</span>
+                                    </div>
+                                    <div class="h-2 bg-white/5 rounded-full overflow-hidden">
+                                        <div class="h-full bg-gradient-to-r from-cyan-400 to-purple-500 w-[85%]"></div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="hidden lg:block w-32 h-32 relative">
+                                <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100">
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="8" class="text-white/5"/>
+                                    <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" stroke-width="8" stroke-dasharray="283" stroke-dashoffset="70" class="text-cyan-400" stroke-linecap="round"/>
+                                </svg>
+                                <div class="absolute inset-0 flex flex-col items-center justify-center">
+                                    <span class="text-2xl font-black">75%</span>
+                                    <span class="text-[8px] uppercase tracking-tighter text-white/40">Goal</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SESSION DISCOVERY AREA -->
+                <section class="mb-10">
+                    <div class="flex justify-between items-end mb-8">
+                        <div>
+                            <h3 class="text-2xl font-bold tracking-tight">Discover Live Sessions</h3>
+                            <p class="text-white/40 mt-1">Metered learning starting right now</p>
+                        </div>
+                        <button class="text-cyan-400 text-sm font-bold hover:underline transition-all">See All Categories →</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                        <template x-for="session in sessions" :key="session.id">
+                            <div class="bento-card overflow-hidden group">
+                                <div class="h-48 relative overflow-hidden">
+                                    <img :src="session.img" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 session-card-image" alt="Teacher">
+                                    <div class="absolute top-4 left-4">
+                                        <span class="price-badge px-3 py-1 rounded-full text-xs font-black backdrop-blur-md">
+                                            ₹<span x-text="session.price"></span>/min
+                                        </span>
+                                    </div>
+                                    <div class="absolute bottom-4 left-4 right-4 flex justify-between items-center">
+                                        <div class="flex items-center gap-1 text-yellow-400">
+                                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path></svg>
+                                            <span class="text-xs font-bold text-white" x-text="session.rating"></span>
+                                        </div>
+                                        <div class="flex -space-x-2">
+                                            <div class="w-6 h-6 rounded-full border border-black bg-white/20 text-[8px] flex items-center justify-center">12+</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="p-6">
+                                    <p class="text-[10px] text-cyan-400 font-black uppercase tracking-widest mb-1" x-text="session.teacher"></p>
+                                    <h4 class="text-lg font-bold mb-6 group-hover:text-cyan-400 transition-colors" x-text="session.topic"></h4>
+                                    <div class="flex gap-2">
+                                        <button class="flex-1 py-3 bg-white text-black text-sm font-bold rounded-xl hover:bg-cyan-400 transition-colors">Start Session</button>
+                                        <button class="p-3 border border-white/10 rounded-xl hover:bg-white/5 transition-all">
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z"></path></svg>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </template>
+                    </div>
+                </section>
+            </div>
+        </main>
+
+        <!-- RIGHT MURPH PANEL -->
+        <aside class="hidden xl:flex w-96 flex-col border-l border-white/5 bg-black/40 relative">
+            <div class="p-8 border-b border-white/5 flex flex-col items-center">
+                <div class="relative w-24 h-24 mb-6">
+                    <div class="absolute inset-0 bg-cyan-500/10 blur-2xl rounded-full"></div>
+                    <!-- Murph Avatar -->
+                    <div class="relative w-full h-full bg-black rounded-full border border-white/10 flex items-center justify-center overflow-hidden murph-avatar-small">
+                        <div class="w-6 h-6 bg-cyan-400 rounded-full shadow-[0_0_20px_#00E0FF] blur-[1px]"></div>
+                        <div class="absolute w-full h-0.5 bg-cyan-400/30 animate-pulse"></div>
+                    </div>
+                </div>
+                <h3 class="text-lg font-bold tracking-tight">Murph Co-Pilot</h3>
+                <p class="text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Neural Engine Active</p>
+            </div>
+
+            <!-- Chat History -->
+            <div class="flex-1 overflow-y-auto p-6 space-y-6">
+                <div class="flex flex-col gap-2">
+                    <div class="p-4 bg-white/5 rounded-2xl rounded-tl-none border border-white/5 text-sm leading-relaxed text-white/80 italic">
+                        "Welcome to Murph — your AI co-pilot for mastering anything. Tell me what you'd like to learn today."
+                    </div>
+                    <span class="text-[10px] text-white/20 font-medium ml-2 uppercase">Murph v2.0</span>
+                </div>
+
+                <div x-show="murphThinking" class="flex items-center gap-2 p-4 text-cyan-400/50">
+                    <div class="flex gap-1">
+                        <div class="w-1 h-1 bg-current rounded-full animate-bounce"></div>
+                        <div class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.2s]"></div>
+                        <div class="w-1 h-1 bg-current rounded-full animate-bounce [animation-delay:0.4s]"></div>
+                    </div>
+                    <span class="text-xs italic">Processing request...</span>
+                </div>
+            </div>
+
+            <!-- Input Box -->
+            <div class="p-6">
+                <div class="relative group">
+                    <div class="absolute -inset-0.5 bg-gradient-to-r from-cyan-500 to-purple-600 rounded-2xl blur opacity-20 group-focus-within:opacity-50 transition-opacity"></div>
+                    <div class="relative bg-black rounded-2xl border border-white/10 overflow-hidden">
+                        <textarea 
+                            rows="3"
+                            x-model="searchQuery"
+                            placeholder="Ask Murph what you want to learn..."
+                            class="w-full bg-transparent p-4 text-sm text-white placeholder:text-white/20 outline-none resize-none"
+                            @keydown.enter.prevent="murphThinking = true; setTimeout(() => { murphThinking = false; searchQuery = ''; }, 3000)"
+                        ></textarea>
+                        <div class="flex justify-between items-center p-3 border-t border-white/5 bg-white/[0.02]">
+                            <div class="flex gap-2">
+                                <button class="p-1.5 text-white/30 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-10-14a3 3 0 116 0 3 3 0 01-6 0z"></path></svg></button>
+                                <button class="p-1.5 text-white/30 hover:text-white transition-colors"><svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"></path></svg></button>
+                            </div>
+                            <button 
+                                @click="murphThinking = true; setTimeout(() => { murphThinking = false; searchQuery = ''; }, 3000)"
+                                class="p-2 bg-cyan-400 text-black rounded-xl hover:scale-110 transition-transform shadow-[0_0_15px_rgba(0,224,255,0.4)]"
+                            >
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="3" d="M14 5l7 7m0 0l-7 7m7-7H3"></path></svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <p class="text-[10px] text-center text-white/20 mt-4 uppercase tracking-widest font-bold">Suggested: "Meditation for beginners"</p>
+            </div>
+        </aside>
+
+        <!-- MOBILE FLOATING MURPH -->
+        <button class="xl:hidden fixed bottom-6 right-6 w-16 h-16 bg-gradient-to-tr from-cyan-400 to-purple-500 rounded-full shadow-[0_10px_30px_rgba(0,224,255,0.4)] flex items-center justify-center z-50">
+            <div class="w-12 h-12 bg-black rounded-full flex items-center justify-center border border-white/20">
+                <div class="w-4 h-4 bg-cyan-400 rounded-full animate-pulse shadow-[0_0_10px_#00E0FF]"></div>
+            </div>
+        </button>
+
+    </div>
+
+    <!-- Background Interactions -->
+    <script>
+        document.addEventListener('mousemove', (e) => {
+            const glows = document.querySelectorAll('.ethereal-glow');
+            glows.forEach((glow, index) => {
+                const speed = (index + 1) * 20;
+                const x = (window.innerWidth / 2 - e.pageX) / speed;
+                const y = (window.innerHeight / 2 - e.pageY) / speed;
+                glow.style.transform = `translate(${x}px, ${y}px)`;
+            });
+        });
+    </script>
+</body>
+</html>
